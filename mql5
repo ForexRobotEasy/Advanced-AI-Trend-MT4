@@ -1,0 +1,96 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                              Advanced AI Trend MT4|
+//|                                         Developer's Site: forexroboteasy.com|
+//|                                         Development: Forex Robot Easy Team|
+//|                                                                      |
+//|    This code implements the necessary trade functions and features  |
+//|    for the Advanced AI Trend MT4 product.                            |
+//|                                                                      |
+//|    Note: This code is solely focused on the code requirements for    |
+//|          developing the Advanced AI Trend MT4 product.               |
+//+------------------------------------------------------------------+
+
+// Include necessary libraries
+#include <Trade/Trade.mqh>
+#include <MachineLearning/MachineLearning.mqh>
+
+// Define constants
+#define RISK_PERCENTAGE 2
+#define TP_DISTANCE 30
+#define SL_DISTANCE 20
+#define MIN_SESSION_DATA 100
+#define SCALPING_TIME_FRAME PERIOD_M1
+
+// Create an instance of the Trade class
+CTrade trade;
+
+// Create an instance of the MachineLearning class
+CMachineLearning ml;
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+    // Initialize the Trade class
+    trade.Init(Symbol(), SCALPING_TIME_FRAME);
+
+    // Initialize the MachineLearning class
+    ml.Init();
+
+    return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+    // Deinitialize the Trade class
+    trade.Deinit();
+    
+    // Deinitialize the MachineLearning class
+    ml.Deinit();
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    // Check if there is enough data to analyze
+    if (Bars(SCALPING_TIME_FRAME) < MIN_SESSION_DATA)
+        return;
+
+    // Calculate the entry and exit points using smart algorithms
+    double entryPrice = ml.GetEntryPrice();
+    double exitPrice = ml.GetExitPrice();
+
+    // Calculate the position size based on the risk percentage
+    double risk = AccountBalance() * RISK_PERCENTAGE / 100;
+    double positionSize = trade.CalculatePositionSize(entryPrice, risk, SL_DISTANCE);
+
+    // Place the trade
+    trade.OpenBuyPosition(entryPrice, positionSize, TP_DISTANCE, SL_DISTANCE);
+
+    // Monitor the trade
+    trade.MonitorTrade(exitPrice);
+
+    // Close the trade if necessary
+    if (trade.ShouldCloseTrade())
+        trade.CloseTrade(exitPrice);
+}
+
+//+------------------------------------------------------------------+
+//| Expert start function                                            |
+//+------------------------------------------------------------------+
+void OnStart()
+{
+    // Run the Expert Advisor indefinitely
+    while (!IsStopped())
+    {
+        OnTick();
+        Sleep(1000); // Delay for 1 second
+    }
+}
